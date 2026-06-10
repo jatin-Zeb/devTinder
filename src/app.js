@@ -4,24 +4,25 @@ const { User } = require("./models/user");
 
 const app = express();
 
-app.post("/signup", async(req, res) => {
-    // Create a new instance of new user model
-    const user = new User({
-      firstName: "Jatin2",
-      lastName: "Sonkusale",
-      emailId: "email@gmail.com",
-      password: "password",
-      _id: "6a27097685b3b221e06034be",
-    });
+app.use(express.json())
 
-    await user.save()
-        .then(() => {
-        res.send("User created successfully");
-    })
-    .catch((err) => {
-        res.status(400).send("Error creating user");
-    })
+app.post("/signup", async (req, res) => {
+    try {
+        const user = new User(req.body);
+        await user.save();
+        res.status(201).send("User created successfully");
+    } catch (err) {
+        if (err.name === "ValidationError") {
+            const errors = Object.values(err.errors).map((e) => e.message);
+            return res.status(400).json({ errors });
+        }
 
+        if (err.code === 11000) {
+            return res.status(400).json({ errors: ["Email already exists"] });
+        }
+
+        res.status(500).send("Something went wrong");
+    }
 })
 
 connectDB().then(() => {
